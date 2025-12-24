@@ -1,5 +1,5 @@
 services:
-  zola:
+  projectx:
     build:
       context: .
       dockerfile: Dockerfile

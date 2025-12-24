@@ -1,81 +1,53 @@
-# Zola
+# ProjectX
 
-[zola.chat](https://zola.chat)
-
-**Zola** is the open-source chat interface for all your models.
-
-![zola cover](./public/cover_zola.jpg)
+**ProjectX** is the open-source chat interface for all your models.
 
 ## Features
 
-- Multi-model support: OpenAI, Mistral, Claude, Gemini, Ollama (local models)
-- Bring your own API key (BYOK) support via OpenRouter
-- File uploads
-- Clean, responsive UI with light/dark themes
-- Built with Tailwind CSS, shadcn/ui, and prompt-kit
-- Open-source and self-hostable
-- Customizable: user system prompt, multiple layout options
-- Local AI with Ollama: Run models locally with automatic model detection
-- Full MCP support (wip)
+- 🧠 Multi-model support: Claude, OpenAI, Gemini, Mistral, and more
+- 🔑 BYOK (Bring Your Own Key) ready
+- 🏠 Fully self-hostable
+- 🌐 OpenRouter integration for 100+ models
+- 🦙 Ollama support for local models
+- 💾 Chat history with IndexedDB persistence
 
 ## Quick Start
 
-### Option 1: With OpenAI (Cloud)
+### Local Development
 
 ```bash
-git clone https://github.com/ibelick/zola.git
-cd zola
-npm install
-echo "OPENAI_API_KEY=your-key" > .env.local
-npm run dev
-```
-
-### Option 2: With Ollama (Local)
-
-```bash
-# Install and start Ollama
-curl -fsSL https://ollama.ai/install.sh | sh
-ollama pull llama3.2  # or any model you prefer
-
-# Clone and run Zola
-git clone https://github.com/ibelick/zola.git
-cd zola
 npm install
 npm run dev
 ```
 
-Zola will automatically detect your local Ollama models!
-
-### Option 3: Docker with Ollama
+### Running with Local LLMs (Ollama)
 
 ```bash
-git clone https://github.com/ibelick/zola.git
-cd zola
-docker-compose -f docker-compose.ollama.yml up
+# Clone and run ProjectX
+git clone <your-repo-url>
+cd projects-idea
+npm install
+npm run dev
 ```
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ibelick/zola)
+ProjectX will automatically detect your local Ollama models!
 
-To unlock features like auth, file uploads, see [INSTALL.md](./INSTALL.md).
+### Docker Deployment
 
-## Built with
+```bash
+docker-compose up
+```
 
-- [prompt-kit](https://prompt-kit.com/) — AI components
-- [shadcn/ui](https://ui.shadcn.com) — core components
-- [motion-primitives](https://motion-primitives.com) — animated components
-- [vercel ai sdk](https://vercel.com/blog/introducing-the-vercel-ai-sdk) — model integration, AI features
-- [supabase](https://supabase.com) — auth and storage
+## Configuration
 
-## Sponsors
+Set your API keys in `.env.local`:
 
-<a href="https://vercel.com/oss">
-  <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
-</a>
+```env
+OPENAI_API_KEY=your_key
+ANTHROPIC_API_KEY=your_key
+GOOGLE_GENERATIVE_AI_API_KEY=your_key
+```
 
 ## License
 
-Apache License 2.0
-
-## Notes
-
-This is a beta release. The codebase is evolving and may change.
+This project is licensed under the AGPL-3.0 license.

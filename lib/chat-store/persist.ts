@@ -13,11 +13,11 @@ let dbInitPromise: Promise<void> | null = null
 const stores: Record<string, any> = {}
 
 const isClient = typeof window !== "undefined"
-const DB_NAME = "zola-db"
+const DB_NAME = "projectx-db"
 const DB_VERSION = 2
 
 let storesReady = false
-let storesReadyResolve: () => void = () => {}
+let storesReadyResolve: () => void = () => { }
 const storesReadyPromise = new Promise<void>((resolve) => {
   storesReadyResolve = resolve
 })

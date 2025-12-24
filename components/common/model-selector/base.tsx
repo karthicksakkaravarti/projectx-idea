@@ -226,14 +226,6 @@ export function ModelSelector({
                   <p className="text-muted-foreground mb-2 text-sm">
                     No results found.
                   </p>
-                  <a
-                    href="https://github.com/ibelick/zola/issues/new?title=Model%20Request%3A%20"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground text-sm underline"
-                  >
-                    Request a new model
-                  </a>
                 </div>
               )}
             </div>
@@ -350,14 +342,6 @@ export function ModelSelector({
                   <p className="text-muted-foreground mb-1 text-sm">
                     No results found.
                   </p>
-                  <a
-                    href="https://github.com/ibelick/zola/issues/new?title=Model%20Request%3A%20"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground text-sm underline"
-                  >
-                    Request a new model
-                  </a>
                 </div>
               )}
             </div>

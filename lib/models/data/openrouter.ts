@@ -3,6 +3,38 @@ import { ModelConfig } from "../types"
 
 export const openrouterModels: ModelConfig[] = [
   {
+    id: "openrouter:mistralai/devstral-2512:free",
+    name: "DevStral 2512",
+    provider: "OpenRouter",
+    providerId: "openrouter",
+    modelFamily: "OpenRouter",
+    baseProviderId: "mistralai",
+    description:
+      "Flagship model by MistralAI, optimized for performance and reliability.",
+    tags: ["flagship", "performance", "reliability"],
+    contextWindow: 262144,
+    inputCost: 0,
+    outputCost: 0,
+    priceUnit: "per 1M tokens",
+    vision: false,
+    tools: false,
+    audio: false,
+    reasoning: true,
+    webSearch: false,
+    openSource: false,
+    speed: "Medium",
+    intelligence: "High",
+    website: "https://openrouter.ai/",
+    apiDocs: "https://openrouter.ai/mistralai/devstral-2512:free",
+    modelPage: "https://mistral.ai",
+    releasedAt: "2024-04-01",
+    icon: "mistralai",
+    apiSdk: (apiKey?: string) =>
+      createOpenRouter({
+        apiKey: apiKey || process.env.OPENROUTER_API_KEY,
+      }).chat("mistralai/devstral-2512:free"),
+  },
+  {
     id: "openrouter:xiaomi/mimo-v2-flash:free",
     name: "Mimo V2 Flash",
     provider: "OpenRouter",
