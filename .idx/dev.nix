@@ -28,8 +28,8 @@
       enable = true;
       previews = {
         web = {
-          # Install deps first, then run dev server
-          command = ["bash" "-c" "npm install && npm run dev -- --port $PORT --hostname 0.0.0.0"];
+          # Clean node_modules and reinstall to ensure native modules are built for Linux
+          command = ["bash" "-c" "rm -rf node_modules .next && npm install && npm run dev -- --port $PORT --hostname 0.0.0.0"];
           manager = "web";
         };
       };
@@ -39,7 +39,8 @@
     workspace = {
       # Runs when the workspace is first created
       onCreate = {
-        install-deps = "npm install";
+        # Clean and reinstall to ensure native binaries are compiled for Linux
+        install-deps = "rm -rf node_modules .next && npm install";
       };
 
       # Runs every time the workspace is started (background tasks)
