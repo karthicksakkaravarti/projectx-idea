@@ -32,10 +32,10 @@
       enable = true;
       previews = {
         web = {
-          # Full clean install and rebuild native modules for Linux
+          # Clean install and rebuild native modules for Linux
           command = [
             "bash" "-c" 
-            "rm -rf node_modules .next package-lock.json && npm install && npm run dev -- --port $PORT --hostname 0.0.0.0"
+            "rm -rf node_modules .next && npm ci && npm rebuild && npm run dev -- --port $PORT --hostname 0.0.0.0"
           ];
           manager = "web";
         };
@@ -46,8 +46,8 @@
     workspace = {
       # Runs when the workspace is first created
       onCreate = {
-        # Full clean install for Linux environment
-        install-deps = "rm -rf node_modules .next package-lock.json && npm install";
+        # Clean install and rebuild native modules for Linux
+        install-deps = "rm -rf node_modules .next && npm ci && npm rebuild";
       };
 
       # Runs every time the workspace is started (background tasks)
