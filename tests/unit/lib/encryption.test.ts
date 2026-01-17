@@ -146,7 +146,7 @@ describe('lib/encryption', () => {
             const key = 'sk-proj-1234567890abcdefghij'
             const masked = maskKey(key)
 
-            expect(masked).toBe('sk-p***************ghij')
+            expect(masked).toBe('sk-p********************ghij')
             expect(masked.length).toBe(key.length)
         })
 
