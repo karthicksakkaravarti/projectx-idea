@@ -2,7 +2,15 @@
  * Integration Tests: Chat API Logic
  */
 
-import { validateAndTrackUsage } from '@/app/api/chat/api'
+import {
+    validateAndTrackUsage,
+    incrementMessageCount,
+    logUserMessage,
+    storeAssistantMessage
+} from '@/app/api/chat/api'
+jest.mock('@/app/api/chat/db', () => ({
+    saveFinalAssistantMessage: jest.fn().mockResolvedValue(undefined),
+}))
 import { getAllModels } from '@/lib/models'
 import { getProviderForModel } from '@/lib/openproviders/provider-map'
 
@@ -35,10 +43,83 @@ jest.mock('@/lib/usage', () => ({
         limit: 500,
         resetTime: new Date().toISOString(),
     }),
+    checkUsageByModel: jest.fn().mockResolvedValue({}),
+    incrementUsage: jest.fn().mockResolvedValue({}),
 }))
 
 jest.mock('@/lib/user-keys', () => ({
-    getUserApiKey: jest.fn().mockResolvedValue('test-api-key'),
+    getUserKey: jest.fn().mockResolvedValue('test-api-key'),
+}))
+
+const mockSupabaseClient = {
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({
+        data: { id: 'test-user', email: 'test@example.com' },
+        error: null
+    }),
+    maybeSingle: jest.fn().mockResolvedValue({
+        data: { id: 'test-user', email: 'test@example.com' },
+        error: null
+    }),
+}
+
+jest.mock('@/lib/supabase/server', () => ({
+    createClient: jest.fn().mockResolvedValue({
+        auth: {
+            getUser: jest.fn().mockResolvedValue({
+                data: { user: { id: 'test-user', email: 'test@example.com' } },
+                error: null
+            })
+        },
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+            data: { id: 'test-user', email: 'test@example.com' },
+            error: null
+        }),
+        maybeSingle: jest.fn().mockResolvedValue({
+            data: { id: 'test-user', email: 'test@example.com' },
+            error: null
+        }),
+    }),
+    createServerClient: jest.fn().mockReturnValue({
+        auth: {
+            getUser: jest.fn().mockResolvedValue({
+                data: { user: { id: 'test-user', email: 'test@example.com' } },
+                error: null
+            })
+        },
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+            data: { id: 'test-user', email: 'test@example.com' },
+            error: null
+        }),
+        maybeSingle: jest.fn().mockResolvedValue({
+            data: { id: 'test-user', email: 'test@example.com' },
+            error: null
+        }),
+    }),
+}))
+
+jest.mock('@/lib/supabase/server-guest', () => ({
+    createGuestServerClient: jest.fn().mockResolvedValue({
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+            data: { id: 'test-user', email: 'test@example.com' },
+            error: null
+        }),
+        maybeSingle: jest.fn().mockResolvedValue({
+            data: { id: 'test-user', email: 'test@example.com' },
+            error: null
+        }),
+    }),
 }))
 
 describe('Chat API Logic', () => {
@@ -47,52 +128,100 @@ describe('Chat API Logic', () => {
     })
 
     describe('validateAndTrackUsage', () => {
-        it('should return null for valid authenticated user', async () => {
-            const result = await validateAndTrackUsage(
-                'test-user-id',
-                'gpt-4.1-nano',
-                true
-            )
-
-            expect(result).toBeNull()
-        })
-
-        it('should return error for rate limit exceeded', async () => {
-            const { checkDailyMessageLimit } = require('@/lib/usage')
-            checkDailyMessageLimit.mockResolvedValueOnce({
-                allowed: false,
-                remaining: 0,
-                limit: 5,
-                resetTime: new Date().toISOString(),
+        it('should return client for valid authenticated user', async () => {
+            const result = await validateAndTrackUsage({
+                userId: 'test-user',
+                model: 'gpt-4.1-nano',
+                isAuthenticated: true
             })
 
-            const result = await validateAndTrackUsage(
-                'guest-user-id',
-                'gpt-4.1-nano',
-                false
-            )
-
             expect(result).toBeTruthy()
-            expect(result?.error).toContain('Daily message limit')
         })
 
-        it('should return error for pro model limit exceeded', async () => {
-            const { checkProModelLimit } = require('@/lib/usage')
-            checkProModelLimit.mockResolvedValueOnce({
-                allowed: false,
-                remaining: 0,
-                limit: 500,
-                resetTime: new Date().toISOString(),
+        it('should throw error for rate limit exceeded', async () => {
+            const { checkUsageByModel } = require('@/lib/usage')
+            checkUsageByModel.mockRejectedValueOnce(new Error('Daily message limit exceeded'))
+
+            await expect(validateAndTrackUsage({
+                userId: 'guest-user',
+                model: 'gpt-4.1-nano',
+                isAuthenticated: false
+            })).rejects.toThrow('Daily message limit')
+        })
+
+        it('should throw error for pro model limit exceeded', async () => {
+            const { checkUsageByModel } = require('@/lib/usage')
+            checkUsageByModel.mockRejectedValueOnce(new Error('Daily Pro model limit reached'))
+
+            await expect(validateAndTrackUsage({
+                userId: 'test-user',
+                model: 'gpt-4o',
+                isAuthenticated: true
+            })).rejects.toThrow('Pro model')
+        })
+    })
+
+    describe('incrementMessageCount', () => {
+        it('should increment usage', async () => {
+            const { incrementUsage } = require('@/lib/usage')
+            const mockClient = { from: jest.fn() }
+            await incrementMessageCount({ supabase: mockClient as any, userId: 'test-user' })
+            expect(incrementUsage).toHaveBeenCalledWith(mockClient, 'test-user')
+        })
+
+        it('should handle errors gracefully', async () => {
+            const { incrementUsage } = require('@/lib/usage')
+            incrementUsage.mockRejectedValueOnce(new Error('Update failed'))
+            const mockClient = { from: jest.fn() }
+            await expect(incrementMessageCount({ supabase: mockClient as any, userId: 'test-user' })).resolves.not.toThrow()
+        })
+    })
+
+    describe('logUserMessage', () => {
+        it('should insert user message', async () => {
+            const mockInsert = jest.fn().mockResolvedValue({ error: null })
+            const mockFrom = jest.fn().mockReturnValue({ insert: mockInsert })
+            const mockClient = { from: mockFrom }
+
+            await logUserMessage({
+                supabase: mockClient as any,
+                userId: 'test-user',
+                chatId: 'chat-123',
+                content: 'Hello',
+                model: 'gpt-4',
+                isAuthenticated: true,
+                attachments: []
             })
 
-            const result = await validateAndTrackUsage(
-                'test-user-id',
-                'gpt-4o',
-                true
-            )
+            expect(mockFrom).toHaveBeenCalledWith('messages')
+            expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+                chat_id: 'chat-123',
+                role: 'user',
+                content: 'Hello',
+                user_id: 'test-user'
+            }))
+        })
+    })
 
-            expect(result).toBeTruthy()
-            expect(result?.error).toContain('pro model')
+    describe('storeAssistantMessage', () => {
+        it('should call saveFinalAssistantMessage', async () => {
+            const { saveFinalAssistantMessage } = require('@/app/api/chat/db')
+            const mockClient = { from: jest.fn() }
+
+            await storeAssistantMessage({
+                supabase: mockClient as any,
+                chatId: 'chat-123',
+                messages: [],
+                model: 'gpt-4'
+            })
+
+            expect(saveFinalAssistantMessage).toHaveBeenCalledWith(
+                mockClient,
+                'chat-123',
+                [],
+                undefined,
+                'gpt-4'
+            )
         })
     })
 

@@ -10,13 +10,30 @@ import {
 } from '@/lib/usage'
 import { UsageLimitError } from '@/lib/api'
 
-// Mock Supabase
+// Mock Supabase with proper chainable methods
+let mockUpdateResult: { error: { message: string } | null } = { error: null }
+
 const mockSupabase = {
     from: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockImplementation(() => {
+        // Return an object that is both chainable (has maybeSingle) and awaitable (thenable)
+        return {
+            maybeSingle: mockSupabase.maybeSingle,
+            then: (onfulfilled: any) => Promise.resolve(mockUpdateResult).then(onfulfilled),
+            catch: (onrejected: any) => Promise.resolve(mockUpdateResult).catch(onrejected),
+        }
+    }),
     update: jest.fn().mockReturnThis(),
     maybeSingle: jest.fn(),
+}
+
+// Helper to set mock update result
+const setMockUpdateResult = (result: { error: { message: string } | null }) => {
+    mockUpdateResult = result
+    mockSupabase.update.mockReturnValue({
+        eq: jest.fn().mockImplementation(() => Promise.resolve(result)),
+    })
 }
 
 describe('lib/usage', () => {
@@ -116,7 +133,7 @@ describe('lib/usage', () => {
                 error: null,
             })
 
-            mockSupabase.update.mockResolvedValueOnce({ error: null })
+            setMockUpdateResult({ error: null })
 
             const result = await checkUsage(mockSupabase as any, 'user-123')
 
@@ -157,7 +174,7 @@ describe('lib/usage', () => {
                 error: null,
             })
 
-            mockSupabase.update.mockResolvedValueOnce({ error: null })
+            setMockUpdateResult({ error: null })
 
             await incrementUsage(mockSupabase as any, 'user-123')
 
@@ -184,7 +201,7 @@ describe('lib/usage', () => {
                 error: null,
             })
 
-            mockSupabase.update.mockResolvedValueOnce({
+            setMockUpdateResult({
                 error: { message: 'Update failed' },
             })
 
@@ -238,7 +255,7 @@ describe('lib/usage', () => {
                 error: null,
             })
 
-            mockSupabase.update.mockResolvedValueOnce({ error: null })
+            setMockUpdateResult({ error: null })
 
             const result = await checkProUsage(mockSupabase as any, 'user-123')
 
@@ -267,7 +284,7 @@ describe('lib/usage', () => {
                 error: null,
             })
 
-            mockSupabase.update.mockResolvedValueOnce({ error: null })
+            setMockUpdateResult({ error: null })
 
             await incrementProUsage(mockSupabase as any, 'user-123')
 
@@ -293,7 +310,7 @@ describe('lib/usage', () => {
                 error: null,
             })
 
-            mockSupabase.update.mockResolvedValueOnce({
+            setMockUpdateResult({
                 error: { message: 'Update failed' },
             })
 

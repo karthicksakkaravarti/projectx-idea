@@ -5,6 +5,7 @@ import {
   FREE_MODELS_IDS,
   NON_AUTH_DAILY_MESSAGE_LIMIT,
 } from "@/lib/config"
+import { createClient } from "@/lib/supabase/server"
 import { SupabaseClient } from "@supabase/supabase-js"
 
 const isFreeModel = (modelId: string) => FREE_MODELS_IDS.includes(modelId)
@@ -100,7 +101,7 @@ export async function incrementUsage(
   if (userDataError || !userData) {
     throw new Error(
       "Error fetchClienting user data: " +
-        (userDataError?.message || "User not found")
+      (userDataError?.message || "User not found")
     )
   }
 
@@ -233,4 +234,74 @@ export async function incrementUsageByModel(
   }
 
   return await incrementUsage(supabase, userId)
+}
+
+/**
+ * Wrapper function for rate limit checking - returns a standardized response format.
+ * Used by API endpoints to check daily message limits.
+ *
+ * @param userId - The ID of the user.
+ * @param isAuthenticated - Whether the user is authenticated.
+ * @returns Object with allowed, remaining, limit, and resetTime properties.
+ */
+export async function checkDailyMessageLimit(
+  userId: string,
+  isAuthenticated: boolean
+) {
+  const supabase = await createClient()
+  if (!supabase) {
+    return { allowed: false, remaining: 0, limit: 0, resetTime: new Date() }
+  }
+
+  try {
+    const result = await checkUsage(supabase, userId)
+    return {
+      allowed: true,
+      remaining: result.dailyLimit - result.dailyCount,
+      limit: result.dailyLimit,
+      resetTime: new Date(result.userData.daily_reset || new Date()),
+    }
+  } catch (error) {
+    if (error instanceof UsageLimitError) {
+      const dailyLimit = isAuthenticated
+        ? AUTH_DAILY_MESSAGE_LIMIT
+        : NON_AUTH_DAILY_MESSAGE_LIMIT
+      return { allowed: false, remaining: 0, limit: dailyLimit, resetTime: new Date() }
+    }
+    throw error
+  }
+}
+
+/**
+ * Wrapper function for pro model rate limit checking - returns a standardized response format.
+ * Used by API endpoints to check pro model usage limits.
+ *
+ * @param userId - The ID of the user.
+ * @returns Object with allowed, remaining, limit, and resetTime properties.
+ */
+export async function checkProModelLimit(userId: string) {
+  const supabase = await createClient()
+  if (!supabase) {
+    return { allowed: false, remaining: 0, limit: 0, resetTime: new Date() }
+  }
+
+  try {
+    const result = await checkProUsage(supabase, userId)
+    return {
+      allowed: true,
+      remaining: result.limit - result.dailyProCount,
+      limit: result.limit,
+      resetTime: new Date(),
+    }
+  } catch (error) {
+    if (error instanceof UsageLimitError) {
+      return {
+        allowed: false,
+        remaining: 0,
+        limit: DAILY_LIMIT_PRO_MODELS,
+        resetTime: new Date(),
+      }
+    }
+    throw error
+  }
 }

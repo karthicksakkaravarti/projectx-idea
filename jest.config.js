@@ -9,10 +9,10 @@ const createJestConfig = nextJest({
 const config = {
   // Test environment
   testEnvironment: 'jsdom',
-  
+
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.tsx'],
-  
+
   // Module name mapping (aligns with tsconfig paths)
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
@@ -22,7 +22,7 @@ const config = {
     '^@/utils/(.*)$': '<rootDir>/utils/$1',
     '^@/tests/(.*)$': '<rootDir>/tests/$1',
   },
-  
+
   // Test patterns
   testMatch: [
     '<rootDir>/tests/**/*.test.{ts,tsx}',
@@ -35,32 +35,80 @@ const config = {
     '<rootDir>/.next/',
     '<rootDir>/tests/e2e/',
   ],
-  
-  // Coverage configuration
+
+  // Coverage configuration - covering all directories
   collectCoverageFrom: [
+    // Library code
     'lib/**/*.{ts,tsx}',
-    '!lib/**/*.d.ts',
-    '!lib/**/types.ts',
+
+    // Application code
+    'app/**/*.{ts,tsx}',
+
+    // Shared components
+    'components/**/*.{ts,tsx}',
+
+    // Utilities
+    'utils/**/*.{ts,tsx}',
+
+    // Middleware
+    'middleware.ts',
+
+    // ===== EXCLUSIONS =====
+
+    // Type definition files
+    '!**/*.d.ts',
+    '!**/types.ts',
+    '!**/types/**',
+    '!app/types/**',
+
+    // Store files (Zustand stores with complex state)
     '!lib/chat-store/**',
     '!lib/model-store/**',
     '!lib/user-store/**',
     '!lib/user-preference-store/**',
+
+    // Hooks that require complex mocking
     '!lib/hooks/**',
+
+    // MCP and provider configuration
     '!lib/mcp/**',
     '!lib/providers/**',
     '!lib/models/data/**',
     '!lib/models/index.ts',
     '!lib/openproviders/index.ts',
     '!lib/openproviders/env.ts',
+
+    // Server-side only code
     '!lib/supabase/**',
     '!lib/server/**',
     '!lib/user/**',
+    '!utils/supabase/**',
+
+    // Complex lib files
     '!lib/fetch.ts',
     '!lib/motion.ts',
     '!lib/routes.ts',
     '!lib/file-handling.ts',
     '!lib/api.ts',
-    '!lib/usage.ts',
+
+    // Next.js generated files and layouts
+    '!app/layout.tsx',
+    '!app/layout-client.tsx',
+    '!app/not-found.tsx',
+    '!app/globals.css',
+
+    // Image generation files
+    '!app/icon.tsx',
+    '!app/apple-icon.tsx',
+    '!app/opengraph-image.tsx',
+
+    // Icon components (SVG wrappers)
+    '!components/icons/**',
+
+    // Motion primitives (animation wrappers)
+    '!components/motion-primitives/**',
+
+    // Build and system directories
     '!**/node_modules/**',
     '!**/.next/**',
     '!**/coverage/**',
@@ -76,22 +124,22 @@ const config = {
       statements: 80,
     },
   },
-  
+
   // Coverage reporter types
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
-  
+
   // Coverage directory
   coverageDirectory: '<rootDir>/coverage',
-  
+
   // Test timeout
   testTimeout: 10000,
-  
+
   // Verbose output
   verbose: true,
-  
+
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  
+
   // Transform ignore patterns
   transformIgnorePatterns: [
     '/node_modules/',

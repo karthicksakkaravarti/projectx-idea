@@ -4,23 +4,38 @@
 
 import { checkDailyMessageLimit, checkProModelLimit } from '@/lib/usage'
 
-// Mock Supabase
-jest.mock('@/lib/supabase/server', () => ({
-    createServerClient: jest.fn().mockReturnValue({
-        from: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                    gte: jest.fn().mockReturnValue({
-                        maybeSingle: jest.fn().mockResolvedValue({
-                            data: { count: 5 },
-                            error: null,
-                        }),
-                    }),
-                }),
-            }),
+jest.mock('@/lib/supabase/server', () => {
+    const mockSupabaseChain = {
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockImplementation(function (this: any, col, val) {
+            if (col === 'id') {
+                this._userId = val
+            }
+            return this
         }),
-    }),
-}))
+        maybeSingle: jest.fn().mockImplementation(function (this: any) {
+            const isGuest = this._userId === 'guest-user'
+            return Promise.resolve({
+                data: {
+                    message_count: 5,
+                    daily_message_count: 5,
+                    daily_pro_message_count: 5,
+                    daily_reset: new Date().toISOString(),
+                    daily_pro_reset: new Date().toISOString(),
+                    anonymous: isGuest,
+                    premium: false,
+                },
+                error: null,
+            })
+        }),
+    }
+
+    return {
+        createServerClient: jest.fn().mockReturnValue(mockSupabaseChain),
+        createClient: jest.fn().mockResolvedValue(mockSupabaseChain),
+    }
+})
 
 describe('Rate Limits Logic', () => {
     beforeEach(() => {

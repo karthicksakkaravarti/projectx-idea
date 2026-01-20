@@ -146,7 +146,8 @@ describe('lib/encryption', () => {
             const key = 'sk-proj-1234567890abcdefghij'
             const masked = maskKey(key)
 
-            expect(masked).toBe('sk-p***************ghij')
+            // key.length = 28, so 28 - 8 = 20 asterisks in the middle
+            expect(masked).toBe('sk-p' + '*'.repeat(key.length - 8) + 'ghij')
             expect(masked.length).toBe(key.length)
         })
 
