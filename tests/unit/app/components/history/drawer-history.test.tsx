@@ -1,14 +1,34 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react"
 import { DrawerHistory } from "@/app/components/history/drawer-history"
 import { useChats } from "@/lib/chat-store/chats/provider"
 import { useParams } from "next/navigation"
 
-jest.mock("@/lib/chat-store/chats/provider")
-jest.mock("next/navigation")
+jest.mock("@/lib/chat-store/persist", () => ({
+    ensureDbReady: jest.fn(),
+    readFromIndexedDB: jest.fn(),
+    writeToIndexedDB: jest.fn(),
+    deleteFromIndexedDB: jest.fn(),
+    clearAllIndexedDBStores: jest.fn(),
+}))
 
-// Mocking Drawer component as it's often hard to test portal-based components directly
+jest.mock("@/components/ui/tooltip", () => ({
+    Tooltip: ({ children }: any) => <>{children}</>,
+    TooltipTrigger: ({ children }: any) => <>{children}</>,
+    TooltipContent: ({ children }: any) => <div data-testid="tooltip-content">{children}</div>,
+    TooltipProvider: ({ children }: any) => <>{children}</>,
+}))
+
+jest.mock("@/lib/chat-store/chats/provider")
+jest.mock("next/navigation", () => ({
+    useRouter: jest.fn(),
+    usePathname: jest.fn(),
+    useSearchParams: jest.fn(),
+    useParams: jest.fn(),
+}))
+
+// Mocking Drawer component
 jest.mock("@/components/ui/drawer", () => ({
-    Drawer: ({ children, open }: any) => (open ? <div>{children}</div> : null),
+    Drawer: ({ children, open }: any) => (open ? <div data-testid="drawer">{children}</div> : null),
     DrawerContent: ({ children }: any) => <div data-testid="drawer-content">{children}</div>,
     DrawerTrigger: ({ children }: any) => <div>{children}</div>,
 }))
@@ -80,25 +100,16 @@ describe("DrawerHistory", () => {
             />
         )
 
-        // Using test-id or finding by specific icon might be needed, 
-        // but here we can find buttons by their position or role if they had labels.
-        // Since they don't have aria-labels in DrawerHistory yet, I'll rely on the PencilSimple mock if available 
-        // or just finding the button container.
-        // Actually, I should probably add aria-labels to DrawerHistory for better testability.
-        // But let's try to find it via its parent or structure.
+        const chat1Text = screen.getByText("Chat 1")
+        const itemContainer = chat1Text.closest(".group")!
+        const editButton = within(itemContainer).getByLabelText("Edit")
+        fireEvent.click(editButton)
 
-        // For now, let's assume we can find the edit button.
-        const buttons = screen.getAllByRole("button")
-        // By looking at the code, for each chat there are 3 buttons: Pin, Edit, Delete.
-        // Chat 1 is at index 0, so buttons 0, 1, 2 are for Chat 1.
-        fireEvent.click(buttons[1]) // Edit button for Chat 1
-
-        const input = screen.getByDisplayValue("Chat 1")
+        const input = await screen.findByDisplayValue("Chat 1")
         fireEvent.change(input, { target: { value: "New Title" } })
 
-        // After entering edit mode, there are Check and X buttons.
-        const form = screen.getByRole("textbox").closest("form")!
-        fireEvent.submit(form)
+        const confirmButton = screen.getByLabelText("Confirm")
+        fireEvent.click(confirmButton)
 
         await waitFor(() => {
             expect(mockOnSaveEdit).toHaveBeenCalledWith("1", "New Title")
@@ -117,11 +128,13 @@ describe("DrawerHistory", () => {
             />
         )
 
-        const buttons = screen.getAllByRole("button")
-        fireEvent.click(buttons[2]) // Delete button for Chat 1
+        const chat1Text = screen.getByText("Chat 1")
+        const itemContainer = chat1Text.closest(".group")!
+        const deleteButton = within(itemContainer).getByLabelText("Delete")
+        fireEvent.click(deleteButton)
 
-        const confirmButton = screen.getAllByRole("button").find(b => b.querySelector("svg")) // Find the check icon button
-        fireEvent.submit(screen.getByRole("textbox", { hidden: true }).closest("form")!)
+        const confirmDeleteButton = await screen.findByLabelText("Confirm delete")
+        fireEvent.click(confirmDeleteButton)
 
         await waitFor(() => {
             expect(mockOnConfirmDelete).toHaveBeenCalledWith("1")
@@ -140,8 +153,10 @@ describe("DrawerHistory", () => {
             />
         )
 
-        const buttons = screen.getAllByRole("button")
-        fireEvent.click(buttons[0]) // Pin button for Chat 1
+        const chat1Text = screen.getByText("Chat 1")
+        const itemContainer = chat1Text.closest(".group")!
+        const pinButton = within(itemContainer).getByLabelText("Pin")
+        fireEvent.click(pinButton)
 
         expect(mockTogglePinned).toHaveBeenCalledWith("1", true)
     })

@@ -34,13 +34,7 @@ jest.mock('@/app/components/chat/message-user', () => ({
 }))
 
 // Mock clipboard API
-// Navigator clipboard is mocked by defining it as configurable
 const mockWriteText = jest.fn().mockResolvedValue(undefined)
-Object.defineProperty(navigator, 'clipboard', {
-    value: { writeText: mockWriteText },
-    writable: true,
-    configurable: true,
-})
 
 describe('Message Component', () => {
     const defaultUserProps = {
@@ -64,6 +58,12 @@ describe('Message Component', () => {
     beforeEach(() => {
         jest.clearAllMocks()
         jest.useFakeTimers()
+
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText: mockWriteText },
+            writable: true,
+            configurable: true,
+        })
     })
 
     afterEach(() => {
@@ -105,11 +105,19 @@ describe('Message Component', () => {
     describe('copy to clipboard', () => {
         it('should copy content to clipboard when copy button is clicked', async () => {
             jest.useRealTimers()
-            const user = userEvent.setup()
+            const writeTextSpy = jest.fn().mockResolvedValue(undefined)
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { writeText: writeTextSpy },
+                writable: true,
+                configurable: true,
+            })
+
             render(<Message {...defaultUserProps} />)
 
-            await user.click(screen.getByTestId('copy-button'))
-            expect(mockWriteText).toHaveBeenCalledWith('Hello, world!')
+            fireEvent.click(screen.getByTestId('copy-button'))
+            await waitFor(() => {
+                expect(writeTextSpy).toHaveBeenCalledWith('Hello, world!')
+            })
         })
 
         it('should show copied state after clicking copy', async () => {

@@ -49,17 +49,20 @@ jest.mock("@/components/common/model-selector/base", () => ({
 
 jest.mock("@/components/prompt-kit/prompt-input", () => ({
     PromptInput: ({ children }: any) => <div>{children}</div>,
-    PromptInputTextarea: require('react').forwardRef(({ value, onValueChange, onKeyDown, onPaste, placeholder }: any, ref: any) => (
-        <textarea
-            ref={ref}
-            value={value}
-            onChange={(e) => onValueChange(e.target.value)}
-            onKeyDown={onKeyDown}
-            onPaste={onPaste}
-            placeholder={placeholder}
-            data-testid="chat-textarea"
-        />
-    )),
+    PromptInputTextarea: (() => {
+        const React = require('react');
+        return React.forwardRef(({ value, onValueChange, onKeyDown, onPaste, placeholder }: any, ref: any) => (
+            <textarea
+                ref={ref}
+                value={value}
+                onChange={(e: any) => onValueChange(e.target.value)}
+                onKeyDown={onKeyDown}
+                onPaste={onPaste}
+                placeholder={placeholder}
+                data-testid="chat-textarea"
+            />
+        ));
+    })(),
     PromptInputActions: ({ children }: any) => <div>{children}</div>,
     PromptInputAction: ({ children }: any) => <div>{children}</div>,
 }))
@@ -117,5 +120,26 @@ describe("ChatInput", () => {
         const quotedText = { text: "hello", messageId: "1" }
         render(<ChatInput {...mockProps} quotedText={quotedText} />)
         expect(mockProps.onValueChange).toHaveBeenCalledWith("> hello\n\n")
+    })
+
+    it("handles image paste", () => {
+        render(<ChatInput {...mockProps} />)
+        const textarea = screen.getByTestId("chat-textarea")
+
+        const file = new File([""], "test.png", { type: "image/png" })
+        const event = {
+            clipboardData: {
+                items: [
+                    {
+                        type: "image/png",
+                        getAsFile: () => file,
+                    },
+                ],
+            },
+            preventDefault: jest.fn(),
+        }
+
+        fireEvent.paste(textarea, event)
+        expect(mockProps.onFileUpload).toHaveBeenCalledWith([expect.any(File)])
     })
 })

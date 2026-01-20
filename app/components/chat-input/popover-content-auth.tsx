@@ -32,13 +32,13 @@ export function PopoverContentAuth() {
 
       // Redirect to the provider URL
       if (data?.url) {
-        window.location.href = data.url
+        window.location.assign(data.url)
       }
     } catch (err: unknown) {
       console.error("Error signing in with Google:", err)
       setError(
         (err as Error).message ||
-          "An unexpected error occurred. Please try again."
+        "An unexpected error occurred. Please try again."
       )
     } finally {
       setIsLoading(false)

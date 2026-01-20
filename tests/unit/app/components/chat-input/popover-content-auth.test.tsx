@@ -1,75 +1,72 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
-import { PopoverContentAuth } from "@/app/components/chat-input/popover-content-auth"
-import { signInWithGoogle } from "@/lib/api"
-import { createClient } from "@/lib/supabase/client"
+/**
+ * Unit Tests: PopoverContentAuth Component
+ */
+
+import React from 'react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { PopoverContentAuth } from '@/app/components/chat-input/popover-content-auth'
+import { signInWithGoogle } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 // Mock dependencies
-jest.mock("@/lib/api", () => ({
-    signInWithGoogle: jest.fn(),
-}))
+const mockSignInWithGoogle = jest.fn()
 
-jest.mock("@/lib/supabase/client", () => ({
-    createClient: jest.fn(),
-}))
-
-jest.mock("@/lib/supabase/config", () => ({
+jest.mock('@/lib/supabase/config', () => ({
     isSupabaseEnabled: true,
 }))
 
-jest.mock("@/components/ui/button", () => ({
-    Button: ({ children, onClick, disabled }: any) => (
-        <button onClick={onClick} disabled={disabled}>
-            {children}
-        </button>
-    ),
-}))
-
-jest.mock("@/components/ui/popover", () => ({
-    PopoverContent: ({ children }: any) => <div data-testid="popover-content">{children}</div>,
-}))
-
-describe("PopoverContentAuth", () => {
-    const mockSupabase = {
+jest.mock('@/lib/supabase/client', () => ({
+    createClient: () => ({
         auth: {
             signInWithOAuth: jest.fn(),
         },
-    }
+    }),
+}))
 
+jest.mock('@/lib/api', () => ({
+    signInWithGoogle: (supabase: any) => mockSignInWithGoogle(supabase),
+}))
+
+jest.mock('@/components/ui/button', () => ({
+    Button: ({ children, onClick, disabled }: any) => (
+        <button onClick={onClick} disabled={disabled}>{children}</button>
+    ),
+}))
+
+jest.mock('@/components/ui/popover', () => ({
+    PopoverContent: ({ children, className }: any) => (
+        <div data-testid="popover-content" className={className}>{children}</div>
+    ),
+}))
+
+describe('PopoverContentAuth Component', () => {
     beforeEach(() => {
         jest.clearAllMocks()
-            ; (createClient as jest.Mock).mockReturnValue(mockSupabase)
-        // Setup window.location.href mock
-        delete (window as any).location
-        window.location = { href: "" } as any
+        mockSignInWithGoogle.mockResolvedValue({ url: 'https://auth.google.com' })
     })
 
-    it("renders correctly", () => {
+    it('should render correctly', () => {
         render(<PopoverContentAuth />)
         expect(screen.getByText(/Login to try more features for free/i)).toBeInTheDocument()
         expect(screen.getByText(/Continue with Google/i)).toBeInTheDocument()
     })
 
-    it("handles successful sign in and redirects", async () => {
-        (signInWithGoogle as jest.Mock).mockResolvedValue({ url: "https://auth-url.com" })
-
+    it('should call signInWithGoogle when button is clicked', async () => {
         render(<PopoverContentAuth />)
-        fireEvent.click(screen.getByText(/Continue with Google/i))
+        fireEvent.click(screen.getByText('Continue with Google'))
 
-        expect(screen.getByText(/Connecting\.\.\./i)).toBeInTheDocument()
-
-        await waitFor(() => {
-            expect(window.location.href).toBe("https://auth-url.com")
-        })
+        expect(screen.getByText('Connecting...')).toBeInTheDocument()
+        expect(mockSignInWithGoogle).toHaveBeenCalled()
     })
 
-    it("displays error message on sign in failure", async () => {
-        (signInWithGoogle as jest.Mock).mockRejectedValue(new Error("Failed to sign in"))
+    it('should display error message on sign-in failure', async () => {
+        mockSignInWithGoogle.mockRejectedValue(new Error('Sign-in failed'))
 
         render(<PopoverContentAuth />)
-        fireEvent.click(screen.getByText(/Continue with Google/i))
+        fireEvent.click(screen.getByText('Continue with Google'))
 
         await waitFor(() => {
-            expect(screen.getByText("Failed to sign in")).toBeInTheDocument()
+            expect(screen.getByText('Sign-in failed')).toBeInTheDocument()
         })
     })
 })

@@ -21,9 +21,12 @@ export const Suggestions = memo(function Suggestions({
 }: SuggestionsProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
-  if (!value && activeCategory !== null) {
-    setActiveCategory(null)
-  }
+  // Restore reset logic
+  React.useEffect(() => {
+    if (!value && activeCategory !== null) {
+      setActiveCategory(null)
+    }
+  }, [value, activeCategory])
 
   const activeCategoryData = SUGGESTIONS_CONFIG.find(
     (group) => group.label === activeCategory

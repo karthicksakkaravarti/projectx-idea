@@ -42,11 +42,11 @@ const indexedDBMock = {
 }
 
 try {
-    Object.defineProperty(window, 'indexedDB', { value: indexedDBMock, configurable: true, writable: true })
-    // @ts-ignore
+    if (typeof window !== 'undefined') {
+        Object.defineProperty(window, 'indexedDB', { value: indexedDBMock, configurable: true, writable: true })
+    }
     Object.defineProperty(global, 'indexedDB', { value: indexedDBMock, configurable: true, writable: true })
 } catch (e) {
-    // Falls back to global assignment
     // @ts-ignore
     global.indexedDB = indexedDBMock
 }

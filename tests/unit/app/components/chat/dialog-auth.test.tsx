@@ -167,38 +167,29 @@ describe('DialogAuth Component', () => {
     describe('redirect behavior', () => {
         const originalLocation = window.location
 
-        beforeEach(() => {
+        let hrefValue = 'http://localhost/';
+        beforeAll(() => {
             // @ts-ignore
             delete window.location;
-            Object.defineProperty(window, 'location', {
-                value: {
-                    href: 'http://localhost/',
-                    assign: jest.fn(),
-                    replace: jest.fn(),
-                    toString: function () { return this.href; }
-                },
-                configurable: true,
-                writable: true,
-            });
+            window.location = {
+                get href() { return hrefValue; },
+                set href(v) { hrefValue = v; },
+                assign: jest.fn(),
+                replace: jest.fn(),
+                toString: function () { return hrefValue; }
+            } as any;
         })
 
-        afterEach(() => {
-            // @ts-ignore
-            delete window.location;
-            Object.defineProperty(window, 'location', {
-                value: originalLocation,
-                configurable: true,
-                writable: true,
-            });
+        afterAll(() => {
+            window.location = originalLocation as any;
         })
 
         it('should redirect to provider URL on successful sign-in', async () => {
             mockSignInWithGoogle.mockResolvedValue({ url: 'https://accounts.google.com/oauth' })
 
-            const user = userEvent.setup()
             render(<DialogAuth {...defaultProps} />)
 
-            await user.click(screen.getByText('Continue with Google'))
+            fireEvent.click(screen.getByText('Continue with Google'))
 
             await waitFor(() => {
                 expect(window.location.href).toBe('https://accounts.google.com/oauth')

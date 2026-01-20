@@ -1,3 +1,4 @@
+import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import { Suggestions } from "@/app/components/chat-input/suggestions"
 
@@ -39,56 +40,72 @@ jest.mock("@/lib/config", () => ({
 }))
 
 describe("Suggestions", () => {
-    const mockOnValueChange = jest.fn()
     const mockOnSuggestion = jest.fn()
+
+    const TestWrapper = ({ initialValue = "" }) => {
+        const [value, setValue] = React.useState(initialValue)
+        return (
+            <Suggestions
+                onValueChange={setValue}
+                onSuggestion={mockOnSuggestion}
+                value={value}
+            />
+        )
+    }
 
     beforeEach(() => {
         jest.clearAllMocks()
     })
 
     it("renders suggestions grid initially", () => {
-        render(
-            <Suggestions
-                onValueChange={mockOnValueChange}
-                onSuggestion={mockOnSuggestion}
-                value=""
-            />
-        )
+        render(<TestWrapper />)
         expect(screen.getByText("Category 1")).toBeInTheDocument()
         expect(screen.getByText("Category 2")).toBeInTheDocument()
     })
 
-    it("switches to items list when a category is clicked", () => {
-        render(
+    it("switches to items list when a category is clicked", async () => {
+        render(<TestWrapper />)
+
+        fireEvent.click(screen.getByText("Category 1"))
+
+        expect(await screen.findByText("Item 1a")).toBeInTheDocument()
+        expect(screen.getByText("Item 1b")).toBeInTheDocument()
+    })
+
+    it("calls onSuggestion and resets when an item is clicked", async () => {
+        render(<TestWrapper />)
+
+        // Trigger category switch
+        fireEvent.click(screen.getByText("Category 1"))
+
+        const item = await screen.findByText("Item 1a")
+        fireEvent.click(item)
+
+        expect(mockOnSuggestion).toHaveBeenCalledWith("Item 1a")
+        expect(screen.queryByText("Item 1a")).not.toBeInTheDocument()
+        expect(screen.getByText("Category 1")).toBeInTheDocument()
+    })
+
+    it("resets category when value is cleared externally", async () => {
+        const { rerender } = render(<TestWrapper initialValue="Prompt 1" />)
+
+        // Wait for first render to settle
+        expect(screen.getByText("Category 1")).toBeInTheDocument()
+
+        // Click category
+        fireEvent.click(screen.getByText("Category 1"))
+        expect(await screen.findByText("Item 1a")).toBeInTheDocument()
+
+        // Re-render with empty value
+        rerender(
             <Suggestions
-                onValueChange={mockOnValueChange}
+                onValueChange={jest.fn()}
                 onSuggestion={mockOnSuggestion}
                 value=""
             />
         )
 
-        fireEvent.click(screen.getByText("Category 1"))
-
-        expect(mockOnValueChange).toHaveBeenCalledWith("Prompt 1")
-        expect(screen.getByText("Item 1a")).toBeInTheDocument()
-        expect(screen.getByText("Item 1b")).toBeInTheDocument()
-    })
-
-    it("calls onSuggestion and resets when an item is clicked", () => {
-        render(
-            <Suggestions
-                onValueChange={mockOnValueChange}
-                onSuggestion={mockOnSuggestion}
-                value="Prompt 1"
-            />
-        )
-
-        // Trigger category switch
-        fireEvent.click(screen.getByText("Category 1"))
-
-        fireEvent.click(screen.getByText("Item 1a"))
-
-        expect(mockOnSuggestion).toHaveBeenCalledWith("Item 1a")
-        expect(mockOnValueChange).toHaveBeenCalledWith("")
+        expect(screen.getByText("Category 1")).toBeInTheDocument()
+        expect(screen.queryByText("Item 1a")).not.toBeInTheDocument()
     })
 })

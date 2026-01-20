@@ -98,8 +98,8 @@ export function DrawerHistory({
     const query = searchQuery.toLowerCase()
     return query
       ? chatHistory.filter((chat) =>
-          (chat.title || "").toLowerCase().includes(query)
-        )
+        (chat.title || "").toLowerCase().includes(query)
+      )
       : chatHistory
   }, [chatHistory, searchQuery])
 
@@ -141,6 +141,7 @@ export function DrawerHistory({
                     variant="ghost"
                     className="h-8 w-8"
                     type="submit"
+                    aria-label="Confirm"
                   >
                     <Check className="size-4" />
                   </Button>
@@ -150,6 +151,7 @@ export function DrawerHistory({
                     className="h-8 w-8"
                     type="button"
                     onClick={handleCancelEdit}
+                    aria-label="Cancel"
                   >
                     <X className="size-4" />
                   </Button>
@@ -188,6 +190,7 @@ export function DrawerHistory({
                     variant="ghost"
                     className="text-muted-foreground hover:text-destructive size-8"
                     type="submit"
+                    aria-label="Confirm delete"
                   >
                     <Check className="size-4" />
                   </Button>
@@ -197,6 +200,7 @@ export function DrawerHistory({
                     className="text-muted-foreground hover:text-destructive size-8"
                     onClick={handleCancelDelete}
                     type="button"
+                    aria-label="Cancel delete"
                   >
                     <X className="size-4" />
                   </Button>
@@ -253,6 +257,7 @@ export function DrawerHistory({
                       handleEdit(chat)
                     }}
                     type="button"
+                    aria-label="Edit"
                   >
                     <PencilSimple className="size-4" />
                   </Button>
@@ -265,6 +270,7 @@ export function DrawerHistory({
                       handleDelete(chat.id)
                     }}
                     type="button"
+                    aria-label="Delete"
                   >
                     <TrashSimple className="size-4" />
                   </Button>

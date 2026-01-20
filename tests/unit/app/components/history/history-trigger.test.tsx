@@ -11,15 +11,41 @@ jest.mock("@/lib/chat-store/messages/provider", () => ({
     useMessages: () => ({ deleteMessages: jest.fn() }),
 }))
 jest.mock("@/lib/chat-store/session/provider")
-jest.mock("next/navigation")
+jest.mock("next/navigation", () => ({
+    useRouter: jest.fn(),
+    usePathname: jest.fn(),
+    useSearchParams: jest.fn(),
+    useParams: jest.fn(),
+}))
+jest.mock("@/lib/chat-store/persist", () => ({
+    ensureDbReady: jest.fn(),
+    readFromIndexedDB: jest.fn(),
+    writeToIndexedDB: jest.fn(),
+    deleteFromIndexedDB: jest.fn(),
+    clearAllIndexedDBStores: jest.fn(),
+}))
 jest.mock("@/app/components/history/command-history", () => ({
-    CommandHistory: ({ isOpen, setIsOpen }: any) => (
-        isOpen ? <div data-testid="command-history">Command History <button onClick={() => setIsOpen(false)}>Close</button></div> : null
+    CommandHistory: ({ trigger, isOpen, setIsOpen }: any) => (
+        <>
+            {trigger}
+            {isOpen && (
+                <div data-testid="command-history">
+                    Command History <button onClick={() => setIsOpen(false)}>Close</button>
+                </div>
+            )}
+        </>
     ),
 }))
 jest.mock("@/app/components/history/drawer-history", () => ({
-    DrawerHistory: ({ isOpen, setIsOpen }: any) => (
-        isOpen ? <div data-testid="drawer-history">Drawer History <button onClick={() => setIsOpen(false)}>Close</button></div> : null
+    DrawerHistory: ({ trigger, isOpen, setIsOpen }: any) => (
+        <>
+            {trigger}
+            {isOpen && (
+                <div data-testid="drawer-history">
+                    Drawer History <button onClick={() => setIsOpen(false)}>Close</button>
+                </div>
+            )}
+        </>
     ),
 }))
 
